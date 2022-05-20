@@ -37,3 +37,55 @@ circuit_schema = StructType([StructField("circuitId", IntegerType(), False), \
 #Variable types
 
 circuits_df.printSchema()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC 
+# MAGIC ### Remove URL column
+# MAGIC 
+# MAGIC Two ways
+# MAGIC * **select** only the columns you need
+# MAGIC * **drop** the specific column
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC **.select()** has **four styles:** \
+# MAGIC \
+# MAGIC 
+# MAGIC **basic:** \
+# MAGIC .select("columnName") \
+# MAGIC 
+# MAGIC **apply column-based functions:** \
+# MAGIC .select(dfName.columnName) \
+# MAGIC .select(dfName["columnName"]) \
+# MAGIC .select(col("columnName"))
+
+# COMMAND ----------
+
+circuits_selected_df = circuits_df.select("circuitId", "circuitRef", "name", "location", "lat", "lng", "alt")
+
+# COMMAND ----------
+
+circuits_selected_df = circuits_df.select(circuits_df.circuitId, circuits_df.circuitRef, circuits_df.name, circuits_df.location, circuits_df.lat, circuits_df.lng, circuits_df.alt)
+
+# COMMAND ----------
+
+circuits_selected_df = circuits_df.select(circuits_df["circuitId"], circuits_df["circuitRef"], circuits_df["name"], circuits_df["location"], circuits_df["lat"], circuits_df["lng"], circuits_df["alt"])
+
+# COMMAND ----------
+
+from pyspark.sql.functions import col
+
+# COMMAND ----------
+
+circuits_selected_df = circuits_df.select(col("circuitId"), col("circuitRef"), col("name"), col("location"), col("lat"), col("lng"), col("alt"))
+
+# COMMAND ----------
+
+display(circuits_selected_df)
+
+# COMMAND ----------
+
+

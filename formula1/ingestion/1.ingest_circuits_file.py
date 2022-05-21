@@ -1,15 +1,6 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC ### Ingest circuits.csv file
-
-# COMMAND ----------
-
-#Read CSV file using Spark DataFrame reader
-
-circuits_df = spark.read \
-    .option("header", True) \
-    .schema(circuit_schema) \
-    .csv("dbfs:/mnt/formula123dl/raw/circuits.csv")
+# MAGIC ### Step 1 - Ingest circuits.csv file
 
 # COMMAND ----------
 
@@ -34,15 +25,22 @@ circuit_schema = StructType([StructField("circuitId", IntegerType(), False), \
 
 # COMMAND ----------
 
-#Variable types
+#Read CSV file using Spark DataFrame reader
+circuits_df = spark.read \
+    .option("header", True) \
+    .schema(circuit_schema) \
+    .csv("dbfs:/mnt/formula123dl/raw/circuits.csv")
 
+# COMMAND ----------
+
+#Variable types
 circuits_df.printSchema()
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC 
-# MAGIC ### Remove URL column
+# MAGIC ### Step 2 - Remove URL column
 # MAGIC 
 # MAGIC Two ways
 # MAGIC * **select** only the columns you need
@@ -51,11 +49,11 @@ circuits_df.printSchema()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC **.select()** has **four styles:** \
-# MAGIC \
+# MAGIC **.select()** has **four styles:** 
+# MAGIC 
 # MAGIC 
 # MAGIC **basic:** \
-# MAGIC .select("columnName") \
+# MAGIC .select("columnName") 
 # MAGIC 
 # MAGIC **apply column-based functions:** \
 # MAGIC .select(dfName.columnName) \
@@ -84,8 +82,55 @@ circuits_selected_df = circuits_df.select(col("circuitId"), col("circuitRef"), c
 
 # COMMAND ----------
 
-display(circuits_selected_df)
+# MAGIC %md
+# MAGIC 
+# MAGIC ### Step 3 - Rename column
+# MAGIC 
+# MAGIC can use two methods: 
+# MAGIC 
+# MAGIC 
+# MAGIC 1. df.select(col("columnName").alias("newName")) 
+# MAGIC 
+# MAGIC OR 
+# MAGIC \
+# MAGIC 2. df.withColumnRenamed('oldName', 'newName').collect()
 
 # COMMAND ----------
 
+circuits_renamed_df = circuits_selected_df \
+    .withColumnRenamed("circuitRef", "circuit_ref") \
+    .withColumnRenamed("lat", "latitude") \
+    .withColumnRenamed("lng", "longitude") \
+    .withColumnRenamed("alt", "altitude")
 
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Step 4 - Add column that holds current timestamp & dev env
+
+# COMMAND ----------
+
+from pyspark.sql.functions import current_timestamp, lit
+
+# COMMAND ----------
+
+circuits_final_df = circuits_renamed_df \
+    .withColumn('ingestion_date', current_timestamp()) \
+    .withColumn('env', lit('Production'))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC 
+# MAGIC ### Step 5 - Write to parquet file in DeltaLake
+
+# COMMAND ----------
+
+circuits_final_df.write \
+    .mode("overwrite") \
+    .parquet("/mnt/formula123dl/processed/circuits")
+
+# COMMAND ----------
+
+#read the data back
+df = spark.read.parquet("/mnt/formula123dl/processed/circuits")

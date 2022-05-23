@@ -1,4 +1,12 @@
 # Databricks notebook source
+# MAGIC %run ../includes/configuration
+
+# COMMAND ----------
+
+# MAGIC %run ../includes/common_functions
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ### Step 1 - Ingest constructors.json file
 
@@ -10,7 +18,7 @@ constructors_schema = "constructorId INT, constructorRef STRING, name STRING, na
 
 constructor_df = spark.read \
     .schema(constructors_schema) \
-    .json('/mnt/formula123dl/raw/constructors.json')
+    .json(f'{raw_folder_path}/constructors.json')
 
 # COMMAND ----------
 
@@ -24,15 +32,16 @@ drop_constructor_df = constructor_df.drop(constructor_df.url)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Step 3 - Add ingestion data & rename columns (one step)
+# MAGIC ### Step 3 - rename columns & Add ingestion date
 
 # COMMAND ----------
 
-from pyspark.sql.functions import current_timestamp
+almost_final_constructor_df = drop_constructor_df.withColumnRenamed('constructorId','constructor_id') \
+                                          .withColumnRenamed('constructorRef','constructor_ref')
 
-final_constructor_df = drop_constructor_df.withColumnRenamed('constructorId','constructor_id') \
-                                          .withColumnRenamed('constructorRef','constructor_ref') \
-                                          .withColumn('ingestion_date', current_timestamp())
+# COMMAND ----------
+
+final_constructor_df = add_ingestion_date(almost_final_constructor_df)
 
 # COMMAND ----------
 
@@ -41,4 +50,4 @@ final_constructor_df = drop_constructor_df.withColumnRenamed('constructorId','co
 
 # COMMAND ----------
 
-final_constructor_df.write.mode('overwrite').parquet('/mnt/formula123dl/processed/constructors')
+final_constructor_df.write.mode('overwrite').parquet(f'{processed_folder_path}/constructors')

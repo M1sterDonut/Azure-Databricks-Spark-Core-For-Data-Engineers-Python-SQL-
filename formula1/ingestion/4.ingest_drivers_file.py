@@ -1,4 +1,12 @@
 # Databricks notebook source
+# MAGIC %run ../includes/configuration
+
+# COMMAND ----------
+
+# MAGIC %run ../includes/common_functions
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ### Step 1 - Read file using Spark DataFrame API
 
@@ -26,7 +34,7 @@ driver_schema = StructType([StructField('driverId', IntegerType(), nullable=Fals
 
 drivers_df = spark.read \
     .schema(driver_schema) \
-    .json('/mnt/formula123dl/raw/drivers.json')
+    .json(f'{raw_folder_path}/drivers.json')
 
 # COMMAND ----------
 
@@ -38,12 +46,15 @@ drivers_df = spark.read \
 
 # COMMAND ----------
 
-from pyspark.sql.functions import current_timestamp, concat, lit, col
+from pyspark.sql.functions import concat, lit, col
 
-transformed_drivers_df = drivers_df.withColumnRenamed('driverId', 'driver_id') \
+almost_transformed_drivers_df = drivers_df.withColumnRenamed('driverId', 'driver_id') \
                                    .withColumnRenamed('driverRef', 'driver_ref') \
-                                   .withColumn('ingestion_date', current_timestamp()) \
                                    .withColumn('name',concat(col('name.forename'), lit(' '), col('name.surname')))
+
+# COMMAND ----------
+
+transformed_drivers_df = add_ingestion_date(almost_transformed_drivers_df)
 
 # COMMAND ----------
 
@@ -63,4 +74,4 @@ final_drivers_df = transformed_drivers_df.drop('url')
 
 final_drivers_df.write \
                 .mode('overwrite') \
-                .parquet('/mnt/formula123dl/processed/drivers')
+                .parquet(f'{processed_folder_path}/drivers')

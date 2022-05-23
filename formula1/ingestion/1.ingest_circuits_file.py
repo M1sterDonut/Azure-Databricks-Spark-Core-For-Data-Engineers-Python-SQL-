@@ -1,4 +1,12 @@
 # Databricks notebook source
+# MAGIC %run ../includes/configuration
+
+# COMMAND ----------
+
+# MAGIC %run ../includes/common_functions
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ### Step 1 - Ingest circuits.csv file
 
@@ -29,7 +37,7 @@ circuit_schema = StructType([StructField("circuitId", IntegerType(), False), \
 circuits_df = spark.read \
     .option("header", True) \
     .schema(circuit_schema) \
-    .csv("dbfs:/mnt/formula123dl/raw/circuits.csv")
+    .csv(f"{raw_folder_path}/circuits.csv")
 
 # COMMAND ----------
 
@@ -106,17 +114,11 @@ circuits_renamed_df = circuits_selected_df \
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Step 4 - Add column that holds current timestamp & dev env
+# MAGIC ### Step 4 - Add column that holds current timestamp
 
 # COMMAND ----------
 
-from pyspark.sql.functions import current_timestamp, lit
-
-# COMMAND ----------
-
-circuits_final_df = circuits_renamed_df \
-    .withColumn('ingestion_date', current_timestamp()) \
-    .withColumn('env', lit('Production'))
+circuits_final_df = add_ingestion_date(circuits_renamed_df)
 
 # COMMAND ----------
 
@@ -128,9 +130,9 @@ circuits_final_df = circuits_renamed_df \
 
 circuits_final_df.write \
     .mode("overwrite") \
-    .parquet("/mnt/formula123dl/processed/circuits")
+    .parquet(f"{processed_folder_path}/circuits")
 
 # COMMAND ----------
 
 #read the data back
-df = spark.read.parquet("/mnt/formula123dl/processed/circuits")
+df = spark.read.parquet(f"{processed_folder_path}/circuits")

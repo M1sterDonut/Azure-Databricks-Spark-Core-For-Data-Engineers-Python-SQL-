@@ -3,6 +3,14 @@
 
 # COMMAND ----------
 
+# MAGIC %run ../includes/configuration
+
+# COMMAND ----------
+
+# MAGIC %run ../includes/common_functions
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ### Step 1 - Read multi-line JSON file using Spark DF reader API
 
@@ -25,7 +33,7 @@ pitstop_schema = StructType([StructField('raceId', IntegerType(), False),\
 pitstops_df = spark.read \
     .schema(pitstop_schema) \
     .option('multiLine', True) \
-    .json('/mnt/formula123dl/raw/pit_stops.json')
+    .json(f'{raw_folder_path}/pit_stops.json')
 
 # COMMAND ----------
 
@@ -34,11 +42,14 @@ pitstops_df = spark.read \
 
 # COMMAND ----------
 
-from pyspark.sql.functions import current_timestamp, col, lit
+from pyspark.sql.functions import col, lit
 
-final_pitstops_df = pitstops_df.withColumn('ingestion_date', current_timestamp()) \
-                                     .withColumnRenamed('driverId','driver_id') \
+almost_final_pitstops_df = pitstops_df.withColumnRenamed('driverId','driver_id') \
                                      .withColumnRenamed('raceId', 'race_id')
+
+# COMMAND ----------
+
+final_pitstops_df = add_ingestion_date(almost_final_pitstops_df)
 
 # COMMAND ----------
 
@@ -47,4 +58,4 @@ final_pitstops_df = pitstops_df.withColumn('ingestion_date', current_timestamp()
 
 # COMMAND ----------
 
-final_pitstops_df.write.mode('overwrite').parquet('/mnt/formula123dl/processed/pitstops')
+final_pitstops_df.write.mode('overwrite').parquet(f'{processed_folder_path}/pitstops')

@@ -1,4 +1,12 @@
 # Databricks notebook source
+# MAGIC %run ../includes/configuration
+
+# COMMAND ----------
+
+# MAGIC %run ../includes/common_functions
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ### Step 1 - Load file & apply schema
 
@@ -29,7 +37,7 @@ results_schema = StructType([StructField('resultsId', IntegerType(), False),\
 
 results_df = spark.read \
     .schema(results_schema) \
-    .json('/mnt/formula123dl/raw/results.json')
+    .json(f'{raw_folder_path}/results.json')
 
 # COMMAND ----------
 
@@ -38,10 +46,9 @@ results_df = spark.read \
 
 # COMMAND ----------
 
-from pyspark.sql.functions import col, lit, current_timestamp
+from pyspark.sql.functions import col, lit
 
-transformed_results_df = results_df.drop(col('statusId')) \
-                                   .withColumn('ingestion_date', current_timestamp()) \
+almost_transformed_results_df = results_df.drop(col('statusId')) \
                                    .withColumnRenamed('resultsId', 'results_id') \
                                    .withColumnRenamed('raceId', 'race_id') \
                                    .withColumnRenamed('driverId', 'driver_id') \
@@ -54,7 +61,7 @@ transformed_results_df = results_df.drop(col('statusId')) \
 
 # COMMAND ----------
 
-display(transformed_results_df)
+transformed_results_df = add_ingestion_date(almost_transformed_results_df)
 
 # COMMAND ----------
 
@@ -71,4 +78,4 @@ final_results_df = transformed_results_df
 
 # COMMAND ----------
 
-final_results_df.write.partitionBy('race_id').parquet('/mnt/formula123dl/processed/results')
+final_results_df.write.mode('overwrite').partitionBy('race_id').parquet(f'{processed_folder_path}/results')

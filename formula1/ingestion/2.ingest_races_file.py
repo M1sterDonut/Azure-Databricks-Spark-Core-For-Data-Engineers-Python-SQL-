@@ -1,4 +1,12 @@
 # Databricks notebook source
+# MAGIC %run ../includes/configuration
+
+# COMMAND ----------
+
+# MAGIC %run ../includes/common_functions
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ### Step 1 - Ingest file & apply schema
 
@@ -21,7 +29,7 @@ races_schema = StructType([StructField('raceId',IntegerType(), nullable=False), 
 races_df = spark.read \
     .schema(races_schema) \
     .option('header', True) \
-    .csv('dbfs:/mnt/formula123dl/raw/races.csv')
+    .csv(f"{raw_folder_path}/races.csv")
 
 # COMMAND ----------
 
@@ -56,9 +64,7 @@ type(renamed_races_df)
 
 # COMMAND ----------
 
-from pyspark.sql.functions import current_timestamp, lit
-
-ingestion_races_df = renamed_races_df.withColumn('ingestion_date', current_timestamp())
+ingestion_races_df = add_ingestion_date(renamed_races_df)
 
 # COMMAND ----------
 
@@ -67,7 +73,7 @@ ingestion_races_df = renamed_races_df.withColumn('ingestion_date', current_times
 
 # COMMAND ----------
 
-from pyspark.sql.functions import to_timestamp, concat
+from pyspark.sql.functions import to_timestamp, concat, lit
 
 transform_races_df = ingestion_races_df.withColumn('race_timestamp', to_timestamp(concat(col('date'),lit(' '), col('time')), 'yyyy-MM-dd HH:mm:ss'))
 
@@ -84,8 +90,4 @@ final_races_df = transform_races_df.select(col('race_Id'),col('race_year'),col('
 
 # COMMAND ----------
 
-final_races_df.write.mode('overwrite').partitionBy('race_year').parquet('/mnt/formula123dl/processed/races')
-
-# COMMAND ----------
-
-df = spark.read.parquet('/mnt/formula123dl/processed/races')
+final_races_df.write.mode('overwrite').partitionBy('race_year').parquet(f"{processed_folder_path}/races")

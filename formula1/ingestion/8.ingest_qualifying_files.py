@@ -3,6 +3,14 @@
 
 # COMMAND ----------
 
+# MAGIC %run ../includes/configuration
+
+# COMMAND ----------
+
+# MAGIC %run ../includes/common_functions
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ### Step 1 - Ingest five CSV files / lap_times folder
 
@@ -29,7 +37,7 @@ qualifying_schema = StructType([StructField('qualifyId', IntegerType(), False),\
 qualifying_df = spark.read \
     .schema(qualifying_schema) \
     .option('multiLine',True) \
-    .json('/mnt/formula123dl/raw/qualifying/qualifying_split_*.json')
+    .json(f'{raw_folder_path}/qualifying/qualifying_split_*.json')
 
 # COMMAND ----------
 
@@ -38,13 +46,16 @@ qualifying_df = spark.read \
 
 # COMMAND ----------
 
-from pyspark.sql.functions import current_timestamp, col, lit
+from pyspark.sql.functions import col, lit
 
-final_qualifying_df = qualifying_df.withColumn('ingestion_date', current_timestamp()) \
-                                   .withColumnRenamed('qualifyId','qualify_id') \
+almost_final_qualifying_df = qualifying_df.withColumnRenamed('qualifyId','qualify_id') \
                                    .withColumnRenamed('constructorId', 'constructor_id') \
                                    .withColumnRenamed('driverId','driver_id') \
                                    .withColumnRenamed('raceId', 'race_id')
+
+# COMMAND ----------
+
+final_qualifying_df = add_ingestion_date(almost_final_qualifying_df)
 
 # COMMAND ----------
 
@@ -53,4 +64,4 @@ final_qualifying_df = qualifying_df.withColumn('ingestion_date', current_timesta
 
 # COMMAND ----------
 
-final_qualifying_df.write.mode('overwrite').parquet('/mnt/formula123dl/processed/qualifying')
+final_qualifying_df.write.mode('overwrite').parquet(f'{processed_folder_path}/qualifying')

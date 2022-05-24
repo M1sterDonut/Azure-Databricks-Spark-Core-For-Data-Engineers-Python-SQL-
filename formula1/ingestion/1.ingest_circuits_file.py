@@ -1,4 +1,9 @@
 # Databricks notebook source
+dbutils.widgets.text("p_data_source", "")
+v_data_source = dbutils.widgets.get("p_data_source")
+
+# COMMAND ----------
+
 # MAGIC %run ../includes/configuration
 
 # COMMAND ----------
@@ -82,7 +87,7 @@ circuits_selected_df = circuits_df.select(circuits_df["circuitId"], circuits_df[
 
 # COMMAND ----------
 
-from pyspark.sql.functions import col
+from pyspark.sql.functions import col, lit
 
 # COMMAND ----------
 
@@ -109,7 +114,8 @@ circuits_renamed_df = circuits_selected_df \
     .withColumnRenamed("circuitRef", "circuit_ref") \
     .withColumnRenamed("lat", "latitude") \
     .withColumnRenamed("lng", "longitude") \
-    .withColumnRenamed("alt", "altitude")
+    .withColumnRenamed("alt", "altitude") \
+    .withColumn("data_source", lit(v_data_source))
 
 # COMMAND ----------
 
@@ -136,3 +142,7 @@ circuits_final_df.write \
 
 #read the data back
 df = spark.read.parquet(f"{processed_folder_path}/circuits")
+
+# COMMAND ----------
+
+display(spark.read.parquet("/mnt/formula123dl/processed/circuits"))
